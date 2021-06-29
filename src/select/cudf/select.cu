@@ -8,4 +8,4 @@ void cuda_select_impl(int type, int64_t a, int64_t b) {
 }
 
 REGISTER_DISPATCH(select_stub, &cuda_select_impl)
- 
+// static RegisterCUDADispatch<decltype(&cuda_select_impl), struct select_stub> select_stub__register(select_stub, &cuda_select_impl);

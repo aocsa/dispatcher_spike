@@ -49,7 +49,7 @@ public:
   }
 
   void set_cuda_dispatch_ptr(FnPtr fn_ptr) {
-    // std::cerr << "DispatchStub>>CUDA\n";
+    std::cerr << "DispatchStub>>CUDA\n";
     impl.cuda_dispatch_ptr = reinterpret_cast<void*>(fn_ptr);
   }
 
@@ -62,7 +62,7 @@ private:
 template <typename FnPtr, typename T>
 struct RegisterCUDADispatch {
   RegisterCUDADispatch(DispatchStub<FnPtr, T>& stub, FnPtr value) {
-      // std::cerr << "RegisterCUDADispatch>>RegisterCUDADispatch\n";
+      std::cerr << "RegisterCUDADispatch>>RegisterCUDADispatch\n";
       stub.set_cuda_dispatch_ptr(value);
   }
 };
