@@ -141,7 +141,7 @@ set(SRC_FILES
 
 make_artifact (
         TARGET
-            arrow_dispatcher
+            kernels_cpu
 
         INCLUDES PUBLIC
             ${COMMON_TARGET_INCLUDE_DIRECTORIES}
@@ -153,13 +153,13 @@ make_artifact (
            ${COMPUTE_ARROW_SRC_FILES}
 )
 
-set_target_properties(arrow_dispatcher PROPERTIES CUDA_ARCHITECTURES "72")
-add_executable(arrow_main src/arrow_main.cpp)
-target_link_libraries(arrow_main arrow_dispatcher)
+set_target_properties(kernels_cpu PROPERTIES CUDA_ARCHITECTURES "72")
+add_executable(cpu_main src/cpu_main.cpp)
+target_link_libraries(cpu_main kernels_cpu)
 
 make_artifact (
         TARGET
-            cudf_dispatcher
+            kernels_cuda
 
         INCLUDES PUBLIC
             ${COMMON_TARGET_INCLUDE_DIRECTORIES}
@@ -171,10 +171,10 @@ make_artifact (
             ${SRC_FILES}
 )
 
-set_target_properties(cudf_dispatcher PROPERTIES CUDA_ARCHITECTURES "72")
-add_executable(cudf_main src/cudf_main.cu)
-set_target_properties(cudf_main PROPERTIES CUDA_ARCHITECTURES "72")
-target_link_libraries(cudf_main cudf_dispatcher)
+set_target_properties(kernels_cuda PROPERTIES CUDA_ARCHITECTURES "72")
+add_executable(cuda_cpu_main src/cuda_cpu_main.cu)
+set_target_properties(cuda_cpu_main PROPERTIES CUDA_ARCHITECTURES "72")
+target_link_libraries(cuda_cpu_main kernels_cuda)
 
 # Print the project summary
 feature_summary(WHAT ALL INCLUDE_QUIET_PACKAGES FATAL_ON_MISSING_REQUIRED_PACKAGES)
