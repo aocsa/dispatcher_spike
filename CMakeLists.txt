@@ -85,43 +85,6 @@ endif(CMAKE_BUILD_TYPE MATCHES Debug)
 set(CUDACC_DEFINE -D__CUDACC__)
 
 
-###################################################################################################
-# - conda environment -----------------------------------------------------------------------------
-
-set(BSQL_BLD_PREFIX "")
-if ("$ENV{CONDA_BUILD}" STREQUAL "1")
-    set(CMAKE_SYSTEM_PREFIX_PATH "$ENV{BUILD_PREFIX};$ENV{PREFIX};${CMAKE_SYSTEM_PREFIX_PATH}")
-    message(STATUS "Conda build detected, CMAKE_SYSTEM_PREFIX_PATH set to: ${CMAKE_SYSTEM_PREFIX_PATH}")
-    set(BSQL_BLD_PREFIX "$ENV{BUILD_PREFIX}")
-
-    set(AWS_SDK_CPP_INSTALL_DIR $ENV{BUILD_PREFIX})
-    set(GOOGLE_CLOUD_CPP_INSTALL_DIR $ENV{BUILD_PREFIX})
-    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} $ENV{BUILD_PREFIX}/lib/cmake)
-    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} $ENV{BUILD_PREFIX}/lib64/cmake)
-    set(ENV{PKG_CONFIG_PATH} $ENV{BUILD_PREFIX}/lib/pkgconfig/) # used by find libcurl and openssl
-    set(ENV{LD_LIBRARY_PATH} $ENV{BUILD_PREFIX}/lib/) # to link the tests correctly against libcurl.so
-    link_directories($ENV{BUILD_PREFIX}/lib/)
-    link_directories($ENV{BUILD_PREFIX}/lib64/)
-
-elseif (DEFINED ENV{CONDA_PREFIX})
-    set(CMAKE_SYSTEM_PREFIX_PATH "$ENV{CONDA_PREFIX};${CMAKE_SYSTEM_PREFIX_PATH}")
-    message(STATUS "Conda environment detected, CMAKE_SYSTEM_PREFIX_PATH set to: ${CMAKE_SYSTEM_PREFIX_PATH}")
-    set(BSQL_BLD_PREFIX "$ENV{CONDA_PREFIX}")
-
-    set(AWS_SDK_CPP_INSTALL_DIR $ENV{CONDA_PREFIX})
-    set(GOOGLE_CLOUD_CPP_INSTALL_DIR $ENV{CONDA_PREFIX})
-    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} $ENV{CONDA_PREFIX}/lib/cmake)
-    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} $ENV{CONDA_PREFIX}/lib64/cmake)
-    set(ENV{PKG_CONFIG_PATH} $ENV{CONDA_PREFIX}/lib/pkgconfig/) # used by find libcurl and openssl
-    set(ENV{LD_LIBRARY_PATH} $ENV{CONDA_PREFIX}/lib/) # to link the tests correctly against libcurl.so
-    link_directories($ENV{CONDA_PREFIX}/lib/)
-    link_directories($ENV{CONDA_PREFIX}/lib64/)
-
-endif ()
-message(WARNING "BSQL_BLD_PREFIX set to: ${BSQL_BLD_PREFIX}")
-message(STATUS "CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
-
-#########################################################################3
 
 
 # Include CMake modules
@@ -132,39 +95,13 @@ include(CTest)
 include(cmake/MakeArtifact.cmake)
 
 find_package(Threads)
-# clion not works?
-#find_package(GTest REQUIRED)
-find_package(fmt REQUIRED)
 enable_testing ()
-
-# BEGIN find arrow
-find_path(ARROW_INCLUDE_DIR "arrow" HINTS "$ENV{ARROW_ROOT}/include")
-find_library(ARROW_LIB "arrow" NAMES libarrow HINTS "$ENV{ARROW_ROOT}/lib" "$ENV{ARROW_ROOT}/build")
-message(STATUS "ARROW: ARROW_INCLUDE_DIR set to ${ARROW_INCLUDE_DIR}")
-message(STATUS "ARROW: ARROW_LIB set to ${ARROW_LIB}")
-add_library(arrow SHARED IMPORTED ${ARROW_LIB})
-
-if(ARROW_INCLUDE_DIR AND ARROW_LIB)
-    set_target_properties(arrow PROPERTIES IMPORTED_LOCATION ${ARROW_LIB})
-endif(ARROW_INCLUDE_DIR AND ARROW_LIB)
-# END find arrow
-
-
-link_directories($ENV{CONDA_PREFIX}/lib)
 
 include_directories(
         ${PROJECT_BINARY_DIR}
         ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR}
-
-        ${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR}
-        ${BSQL_BLD_PREFIX}/include
-        ${BSQL_BLD_PREFIX}/include/libcudf/libcudacxx
-        ${BSQL_BLD_PREFIX}/include/blazingdb/io
         ${PROJECT_SOURCE_DIR}/src
         ${PROJECT_SOURCE_DIR}/include
-        ${PROJECT_SOURCE_DIR}/thirdparty/jitify
-        ${PYTHON_INCLUDE_DIRS}
-        "${ARROW_INCLUDE_DIR}"
 )
 
 
@@ -176,32 +113,7 @@ set(COMMON_TARGET_INCLUDE_DIRECTORIES
 
 
 set(COMMON_LIBRARIES
-        pthread
-
-        ${CUDF_COMPUTE_LIBRARIES}
-
-        zmq
-
-#        ${UCX_LIBRARIES}
-
-        parquet
-        arrow
-        snappy
-
-        zstd
-        lz4
-
-        ${S3_LIBRARY}
-
-        ${GCS_LIBRARY}
-
-        libboost_filesystem.so
-        libboost_system.so
-        libboost_regex.so
-
-        # TODO jp c.gonzales make use of standard cmake find_package here (see above)
-        #spdlog::spdlog
-        libspdlog.so
+    pthread
 )
 
 set(COMMON_SRC_FILES
