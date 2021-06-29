@@ -36,7 +36,6 @@ void test_cudf_select(){
 
 int main() {
   test_arrow_select();
-  // TODO: link dynamically with libcudf_dispatcher.a
   test_cudf_select();
   return 0;
 }
