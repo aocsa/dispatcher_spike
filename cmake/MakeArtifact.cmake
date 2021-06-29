@@ -14,7 +14,7 @@ function (make_artifact)
     endif ()
 
     if (ARG_SOURCES)
-        add_library (${ARG_TARGET} ${TYPE} ${ARG_SOURCES})
+        add_library (${ARG_TARGET} SHARED ${TYPE} ${ARG_SOURCES})
     endif()
 
     if (ARG_LIBRARIES)

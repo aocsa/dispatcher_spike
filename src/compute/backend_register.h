@@ -10,6 +10,20 @@
 
 template <typename FnPtr, typename T> struct DispatchStub;
 
+
+struct DispatchStubImpl {
+      void* get_call_ptr(ral::execution::execution_backend backend, void *CPU_BACKEND) {
+        if (backend.id() == ral::execution::backend_id::ARROW) {
+          cpu_dispatch_ptr = CPU_BACKEND;
+          return cpu_dispatch_ptr;
+        } else if (backend.id() == ral::execution::backend_id::CUDF) {
+          return cuda_dispatch_ptr;
+        }
+      }
+      void* cpu_dispatch_ptr{nullptr};
+      void* cuda_dispatch_ptr{nullptr};
+};
+
 template <typename rT, typename T, typename... Args>
 struct DispatchStub<rT (*)(Args...), T> {
   using FnPtr = rT (*)(Args...);
@@ -18,25 +32,37 @@ struct DispatchStub<rT (*)(Args...), T> {
   DispatchStub(const DispatchStub &) = delete;
   DispatchStub &operator=(const DispatchStub &) = delete;
 
+private:
+  FnPtr get_call_ptr(ral::execution::execution_backend backend, void *backend_fn_ptr) {
+    return reinterpret_cast<FnPtr>(
+            impl.get_call_ptr(backend, reinterpret_cast<void*>(backend_fn_ptr)
+          )
+    );
+  }
 public:
   template <typename... ArgTypes>
   rT operator()(ral::execution::execution_backend backend, ArgTypes &&...args) {
     FnPtr call_ptr = nullptr;
-    if (backend.id() == ral::execution::backend_id::ARROW){
-      call_ptr = CPU_BACKEND;
-    } else {
-#ifdef __CUDACC__
-      call_ptr = CUDA_BACKEND;
-#endif
-    }
+    call_ptr = get_call_ptr(backend, reinterpret_cast<void*>(CPU_BACKEND));
     assert(call_ptr != nullptr);
     return (*call_ptr)(std::forward<ArgTypes>(args)...);
   }
 
+  void set_cuda_dispatch_ptr(FnPtr fn_ptr) {
+    impl.cuda_dispatch_ptr = reinterpret_cast<void*>(fn_ptr);
+  }
+
   static FnPtr CPU_BACKEND;
-#ifdef __CUDACC__
-  static FnPtr CUDA_BACKEND;
-#endif
+private:
+  DispatchStubImpl impl;
+};
+
+
+template <typename FnPtr, typename T>
+struct RegisterCUDADispatch {
+  RegisterCUDADispatch(DispatchStub<FnPtr, T>& stub, FnPtr value) {
+    stub.set_cuda_dispatch_ptr(value);
+  }
 };
 
 #define DECLARE_DISPATCH(fn, name)                                             \
@@ -53,7 +79,7 @@ public:
   template <> decltype(fn) DispatchStub<decltype(fn), struct name>::arch = fn;
 
 #define REGISTER_CUDA_DISPATCH(name, fn) \
-  REGISTER_ARCH_DISPATCH(name, CUDA_BACKEND, fn)
+  static RegisterCUDADispatch<decltype(fn), struct name> name ## __register(name, fn);
                                          \
 #if defined(__CUDACC__)
 #define REGISTER_DISPATCH(name, fn)                                            \
